@@ -13,7 +13,8 @@ function CommunitySwitcher() {
   const handleSwitch = (communityId) => {
     switchCommunity(communityId)
     setOpen(false)
-    // Redirect to dashboard on switch since secret key needs re-decryption
+    // Navigate to dashboard — if the key isn't cached for this community,
+    // the DecryptKeyModal will automatically prompt for the password.
     navigate('/dashboard')
   }
 

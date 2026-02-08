@@ -42,7 +42,7 @@ function JoinCommunityPage() {
       const newMembership = data.memberships.find(m => m.communityName === communityName)
       if (newMembership) {
         joinAndSwitchCommunity(data.memberships, newMembership.communityId)
-        storeSecretKey(secretKey)
+        storeSecretKey(secretKey, newMembership.communityId)
       }
 
       navigate('/dashboard')
