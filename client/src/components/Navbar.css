@@ -16,6 +16,12 @@
   height: 60px;
 }
 
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
 .navbar-brand {
   display: flex;
   align-items: center;

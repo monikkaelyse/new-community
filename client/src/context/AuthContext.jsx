@@ -6,9 +6,11 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(localStorage.getItem('token'))
+  const [memberships, setMemberships] = useState([])
+  const [activeMembership, setActiveMembership] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Validate token and load user on mount / token change
+  // Load user + memberships from token on mount
   const loadUser = useCallback(async () => {
     if (!token) {
       setLoading(false)
@@ -18,14 +20,15 @@ export function AuthProvider({ children }) {
     try {
       const { data } = await api.get('/auth/me')
       setUser(data.user)
+      setMemberships(data.memberships)
 
-      // Store encryption data in sessionStorage if not already there
-      if (data.encryptionData && !sessionStorage.getItem('encryptionData')) {
-        sessionStorage.setItem('encryptionData', JSON.stringify(data.encryptionData))
-      }
+      // Restore active membership from localStorage or default to first
+      const savedCommunityId = localStorage.getItem('activeCommunityId')
+      const saved = data.memberships.find(m => m.communityId === savedCommunityId)
+      setActiveMembership(saved || data.memberships[0] || null)
     } catch {
-      // Token is invalid — clear it
       localStorage.removeItem('token')
+      localStorage.removeItem('activeCommunityId')
       setToken(null)
       setUser(null)
     } finally {
@@ -37,26 +40,64 @@ export function AuthProvider({ children }) {
     loadUser()
   }, [loadUser])
 
-  const login = (userData, jwtToken, encryptionData) => {
+  const login = (userData, jwtToken, membershipList) => {
     setUser(userData)
     setToken(jwtToken)
+    setMemberships(membershipList)
     localStorage.setItem('token', jwtToken)
-    if (encryptionData) {
-      sessionStorage.setItem('encryptionData', JSON.stringify(encryptionData))
+
+    // Auto-select first membership
+    if (membershipList.length > 0) {
+      setActiveMembership(membershipList[0])
+      localStorage.setItem('activeCommunityId', membershipList[0].communityId)
     }
   }
 
   const logout = () => {
     setUser(null)
     setToken(null)
+    setMemberships([])
+    setActiveMembership(null)
     localStorage.removeItem('token')
+    localStorage.removeItem('activeCommunityId')
     sessionStorage.clear()
   }
 
   /**
-   * Store the decrypted secret key in sessionStorage for the current session.
-   * This key is used for E2E encryption/decryption of messages.
-   * It only lives in memory/sessionStorage — never sent to the server.
+   * Switch active community. Clears the cached secret key so user
+   * must decrypt the new community's key.
+   */
+  const switchCommunity = (communityId) => {
+    const membership = memberships.find(m => m.communityId === communityId)
+    if (membership) {
+      setActiveMembership(membership)
+      localStorage.setItem('activeCommunityId', communityId)
+      // Clear secret key — new community needs its own decrypted key
+      sessionStorage.removeItem('secretKey')
+    }
+  }
+
+  const updateMemberships = (newMemberships) => {
+    setMemberships(newMemberships)
+  }
+
+  /**
+   * Atomically update memberships and switch to a specific community.
+   * Avoids the stale-state issue when calling updateMemberships + switchCommunity separately.
+   */
+  const joinAndSwitchCommunity = (newMemberships, communityId) => {
+    setMemberships(newMemberships)
+    const membership = newMemberships.find(m => m.communityId === communityId)
+    if (membership) {
+      setActiveMembership(membership)
+      localStorage.setItem('activeCommunityId', communityId)
+      sessionStorage.removeItem('secretKey')
+    }
+  }
+
+  /**
+   * Store the decrypted secret key for the active community.
+   * Only lives in sessionStorage — never sent to the server.
    */
   const storeSecretKey = (secretKey) => {
     sessionStorage.setItem('secretKey', secretKey)
@@ -71,8 +112,13 @@ export function AuthProvider({ children }) {
     token,
     loading,
     isAuthenticated: !!token && !!user,
+    memberships,
+    activeMembership,
     login,
     logout,
+    switchCommunity,
+    updateMemberships,
+    joinAndSwitchCommunity,
     storeSecretKey,
     getSecretKey,
   }
