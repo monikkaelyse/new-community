@@ -9,6 +9,7 @@ import ChatPage from './pages/ChatPage.jsx'
 import BoardPage from './pages/BoardPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
+import JoinCommunityPage from './pages/JoinCommunityPage.jsx'
 import './App.css'
 
 function App() {
@@ -19,7 +20,7 @@ function App() {
       <Navbar />
       <main className="main-content">
         <Routes>
-          {/* Public routes — redirect to dashboard if already logged in */}
+          {/* Public routes */}
           <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
           <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
 
@@ -29,8 +30,9 @@ function App() {
           <Route path="/board" element={<ProtectedRoute><BoardPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+          <Route path="/join-community" element={<ProtectedRoute><JoinCommunityPage /></ProtectedRoute>} />
 
-          {/* Default redirect */}
+          {/* Default */}
           <Route path="/" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
         </Routes>
       </main>

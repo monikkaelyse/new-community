@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import CommunitySwitcher from './CommunitySwitcher.jsx'
 import './Navbar.css'
 
 function Navbar() {
@@ -16,10 +17,14 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
-        <Link to={isAuthenticated ? '/dashboard' : '/'} className="navbar-brand">
-          <span className="navbar-lock">&#x1f512;</span>
-          <span className="navbar-title">CommunityE2E</span>
-        </Link>
+        <div className="navbar-left">
+          <Link to={isAuthenticated ? '/dashboard' : '/'} className="navbar-brand">
+            <span className="navbar-lock">&#x1f512;</span>
+            <span className="navbar-title">CommunityE2E</span>
+          </Link>
+
+          {isAuthenticated && !isAuthPage && <CommunitySwitcher />}
+        </div>
 
         {isAuthenticated && !isAuthPage && (
           <div className="navbar-links">
