@@ -1,0 +1,32 @@
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dashboard-card p {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  flex: 1;
+}
+
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.dashboard-card-header h3 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.dashboard-icon {
+  font-size: 1.5rem;
+}
