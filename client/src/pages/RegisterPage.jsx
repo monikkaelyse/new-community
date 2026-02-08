@@ -36,26 +36,22 @@ function RegisterPage() {
       setError('Passwords do not match')
       return
     }
-
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters')
       return
     }
 
     setSubmitting(true)
-
     try {
-      // Step 1: Generate E2E keypair in the browser
+      // 1. Generate per-community keypair locally
       const { publicKey, secretKey } = generateKeypair()
 
-      // Step 2: Encrypt secret key with password (PBKDF2 + NaCl secretbox)
-      // The plaintext secret key never leaves the browser
+      // 2. Encrypt secret key with password
       const { encryptedSecretKey, nonce, salt } = await encryptSecretKeyWithPassword(
-        secretKey,
-        formData.password
+        secretKey, formData.password
       )
 
-      // Step 3: Send to server — only encrypted data is transmitted
+      // 3. Register — server never sees plaintext secret key
       const { data } = await api.post('/auth/register', {
         username: formData.username,
         email: formData.email,
@@ -68,16 +64,10 @@ function RegisterPage() {
         secretKeySalt: salt,
       })
 
-      // Step 4: Store auth + keep secret key in session memory
-      login(data.user, data.token, {
-        encryptedSecretKey,
-        secretKeyNonce: nonce,
-        secretKeySalt: salt,
-        publicKey,
-      })
+      // 4. Store auth + decrypted secret key in session
+      login(data.user, data.token, data.memberships)
       storeSecretKey(secretKey)
 
-      // Step 5: Navigate to dashboard
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.')

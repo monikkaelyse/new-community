@@ -19,29 +19,30 @@ function LoginPage() {
     setSubmitting(true)
 
     try {
-      // Step 1: Authenticate with server
+      // 1. Authenticate
       const { data } = await api.post('/auth/login', { email, password })
 
-      // Step 2: Decrypt secret key locally using password
-      const { encryptedSecretKey, secretKeyNonce, secretKeySalt } = data.encryptionData
-      const secretKey = await decryptSecretKeyWithPassword(
-        encryptedSecretKey,
-        secretKeyNonce,
-        secretKeySalt,
-        password
-      )
+      // 2. Decrypt the secret key for the first (or only) community
+      const firstMembership = data.memberships[0]
+      if (firstMembership) {
+        const { encryptedSecretKey, secretKeyNonce, secretKeySalt } = firstMembership.encryptionData
+        const secretKey = await decryptSecretKeyWithPassword(
+          encryptedSecretKey, secretKeyNonce, secretKeySalt, password
+        )
 
-      if (!secretKey) {
-        setError('Failed to decrypt your encryption keys. This should not happen — please contact support.')
-        setSubmitting(false)
-        return
+        if (!secretKey) {
+          setError('Failed to decrypt your encryption keys.')
+          setSubmitting(false)
+          return
+        }
+
+        // 3. Store auth + secret key
+        login(data.user, data.token, data.memberships)
+        storeSecretKey(secretKey)
+      } else {
+        login(data.user, data.token, data.memberships)
       }
 
-      // Step 3: Store auth state + secret key in session
-      login(data.user, data.token, data.encryptionData)
-      storeSecretKey(secretKey)
-
-      // Step 4: Navigate to dashboard
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please try again.')
