@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { decryptSecretKeyWithPassword } from '../services/encryption.js'
 import './DecryptKeyModal.css'
@@ -14,6 +14,14 @@ function DecryptKeyModal() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [decrypting, setDecrypting] = useState(false)
+
+  // Reset local state when the target community changes so stale
+  // error messages / passwords from a previous community don't persist.
+  useEffect(() => {
+    setPassword('')
+    setError('')
+    setDecrypting(false)
+  }, [activeMembership?.communityId])
 
   if (!needsKeyDecryption || !activeMembership) return null
 
