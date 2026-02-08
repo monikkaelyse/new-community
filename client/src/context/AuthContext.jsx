@@ -82,6 +82,20 @@ export function AuthProvider({ children }) {
   }
 
   /**
+   * Atomically update memberships and switch to a specific community.
+   * Avoids the stale-state issue when calling updateMemberships + switchCommunity separately.
+   */
+  const joinAndSwitchCommunity = (newMemberships, communityId) => {
+    setMemberships(newMemberships)
+    const membership = newMemberships.find(m => m.communityId === communityId)
+    if (membership) {
+      setActiveMembership(membership)
+      localStorage.setItem('activeCommunityId', communityId)
+      sessionStorage.removeItem('secretKey')
+    }
+  }
+
+  /**
    * Store the decrypted secret key for the active community.
    * Only lives in sessionStorage — never sent to the server.
    */
@@ -104,6 +118,7 @@ export function AuthProvider({ children }) {
     logout,
     switchCommunity,
     updateMemberships,
+    joinAndSwitchCommunity,
     storeSecretKey,
     getSecretKey,
   }

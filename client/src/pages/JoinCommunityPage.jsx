@@ -7,7 +7,7 @@ import './AuthPages.css'
 
 function JoinCommunityPage() {
   const navigate = useNavigate()
-  const { updateMemberships, switchCommunity, storeSecretKey } = useAuth()
+  const { joinAndSwitchCommunity, storeSecretKey } = useAuth()
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [communityName, setCommunityName] = useState('')
@@ -38,11 +38,10 @@ function JoinCommunityPage() {
         secretKeySalt: salt,
       })
 
-      // 4. Update memberships and switch to new community
-      updateMemberships(data.memberships)
+      // 4. Update memberships and switch to new community atomically
       const newMembership = data.memberships.find(m => m.communityName === communityName)
       if (newMembership) {
-        switchCommunity(newMembership.communityId)
+        joinAndSwitchCommunity(data.memberships, newMembership.communityId)
         storeSecretKey(secretKey)
       }
 
