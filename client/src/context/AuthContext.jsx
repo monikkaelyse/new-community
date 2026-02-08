@@ -30,8 +30,11 @@ export function AuthProvider({ children }) {
       const saved = data.memberships.find(m => m.communityId === savedCommunityId)
       setActiveMembership(saved || data.memberships[0] || null)
     } catch {
+      // Token is invalid — clear all auth and session data so stale
+      // secret keys from the expired session don't leak to the next login.
       localStorage.removeItem('token')
       localStorage.removeItem('activeCommunityId')
+      sessionStorage.clear()
       setToken(null)
       setUser(null)
     } finally {
@@ -44,6 +47,11 @@ export function AuthProvider({ children }) {
   }, [loadUser])
 
   const login = (userData, jwtToken, membershipList) => {
+    // Clear any leftover secret keys from a previous session (e.g. a
+    // different user logged in on the same tab after a session expiry
+    // without an explicit logout).
+    sessionStorage.clear()
+
     setUser(userData)
     setToken(jwtToken)
     setMemberships(membershipList)
