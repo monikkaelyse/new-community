@@ -121,11 +121,15 @@ export function AuthProvider({ children }) {
 
   /**
    * Whether the active community's secret key needs decryption.
-   * True when authenticated with an active membership but no cached key.
+   * True when authenticated with an active membership that has
+   * encryptionData but no cached key. Memberships without
+   * encryptionData (shouldn't happen, but defensive) are skipped
+   * so the modal doesn't trap the user.
    * Re-evaluated on every render; keyVersion state changes force re-renders
    * after storeSecretKey() writes to sessionStorage.
    */
-  const needsKeyDecryption = !!token && !!user && !!activeMembership && !getSecretKey()
+  const needsKeyDecryption = !!token && !!user && !!activeMembership
+    && !!activeMembership.encryptionData && !getSecretKey()
 
   const value = {
     user,

@@ -10,7 +10,7 @@ import './DecryptKeyModal.css'
  * cached key exists for that community in sessionStorage.
  */
 function DecryptKeyModal() {
-  const { activeMembership, storeSecretKey, needsKeyDecryption } = useAuth()
+  const { activeMembership, storeSecretKey, needsKeyDecryption, logout } = useAuth()
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [decrypting, setDecrypting] = useState(false)
@@ -23,7 +23,7 @@ function DecryptKeyModal() {
     setDecrypting(false)
   }, [activeMembership?.communityId])
 
-  if (!needsKeyDecryption || !activeMembership) return null
+  if (!needsKeyDecryption || !activeMembership?.encryptionData) return null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -94,6 +94,15 @@ function DecryptKeyModal() {
           Your password is used locally to decrypt your private key.
           It is never sent to the server.
         </p>
+
+        <button
+          type="button"
+          className="btn btn-secondary auth-submit"
+          style={{ marginTop: '0.75rem' }}
+          onClick={logout}
+        >
+          Log Out
+        </button>
       </div>
     </div>
   )
