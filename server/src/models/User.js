@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 
+/**
+ * User stores account-level auth data only.
+ * Community-specific data (keys, roles, profiles) lives in Membership.
+ */
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -20,49 +24,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // E2E encryption keys
-  publicKey: {
-    type: String,
-    required: true,
-  },
-  encryptedSecretKey: {
-    type: String,
-    required: true,
-  },
-  secretKeyNonce: {
-    type: String,
-    required: true,
-  },
-  secretKeySalt: {
-    type: String,
-    required: true,
-  },
-  // Profile info
-  profile: {
-    displayName: { type: String, default: '' },
-    bio: { type: String, default: '', maxlength: 500 },
-    avatarUrl: { type: String, default: '' },
-  },
-  // Community membership
-  communityId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Community',
-    required: true,
-  },
-  role: {
-    type: String,
-    enum: ['admin', 'member'],
-    default: 'member',
-  },
 }, {
   timestamps: true,
 });
 
-// Never return sensitive fields in JSON
+// Never return password hash in JSON
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.passwordHash;
-  delete obj.encryptedSecretKey;
   return obj;
 };
 
