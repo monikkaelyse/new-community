@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { decryptSecretKeyWithPassword } from '../services/encryption.js'
 import './DecryptKeyModal.css'
@@ -14,6 +14,15 @@ function DecryptKeyModal() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [decrypting, setDecrypting] = useState(false)
+
+  // Track whether the component is still mounted so the async decryption
+  // handler can bail out if the user logs out (or navigates away) while
+  // PBKDF2 derivation is in progress. Without this, storeSecretKey()
+  // could write a key back to sessionStorage after logout cleared it.
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    return () => { mountedRef.current = false }
+  }, [])
 
   // Reset local state when the target community changes so stale
   // error messages / passwords from a previous community don't persist.
@@ -37,6 +46,10 @@ function DecryptKeyModal() {
         encryptedSecretKey, secretKeyNonce, secretKeySalt, password
       )
 
+      // If the user logged out while decryption was running, don't
+      // write the key back — sessionStorage was already cleared.
+      if (!mountedRef.current) return
+
       if (!secretKey) {
         setError('Incorrect password. Could not decrypt your encryption keys.')
         setDecrypting(false)
@@ -47,9 +60,12 @@ function DecryptKeyModal() {
       setPassword('')
       setError('')
     } catch {
+      if (!mountedRef.current) return
       setError('Decryption failed. Please try again.')
     } finally {
-      setDecrypting(false)
+      if (mountedRef.current) {
+        setDecrypting(false)
+      }
     }
   }
 
