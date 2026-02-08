@@ -9,6 +9,9 @@ export function AuthProvider({ children }) {
   const [memberships, setMemberships] = useState([])
   const [activeMembership, setActiveMembership] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Bumped when a secret key is stored/cleared to trigger re-renders
+  // that depend on sessionStorage key presence (e.g. needsKeyDecryption).
+  const [keyVersion, setKeyVersion] = useState(0)
 
   // Load user + memberships from token on mount
   const loadUser = useCallback(async () => {
@@ -27,8 +30,11 @@ export function AuthProvider({ children }) {
       const saved = data.memberships.find(m => m.communityId === savedCommunityId)
       setActiveMembership(saved || data.memberships[0] || null)
     } catch {
+      // Token is invalid — clear all auth and session data so stale
+      // secret keys from the expired session don't leak to the next login.
       localStorage.removeItem('token')
       localStorage.removeItem('activeCommunityId')
+      sessionStorage.clear()
       setToken(null)
       setUser(null)
     } finally {
@@ -41,6 +47,11 @@ export function AuthProvider({ children }) {
   }, [loadUser])
 
   const login = (userData, jwtToken, membershipList) => {
+    // Clear any leftover secret keys from a previous session (e.g. a
+    // different user logged in on the same tab after a session expiry
+    // without an explicit logout).
+    sessionStorage.clear()
+
     setUser(userData)
     setToken(jwtToken)
     setMemberships(membershipList)
@@ -64,16 +75,15 @@ export function AuthProvider({ children }) {
   }
 
   /**
-   * Switch active community. Clears the cached secret key so user
-   * must decrypt the new community's key.
+   * Switch active community. The per-community secret key may already
+   * be cached in sessionStorage — if not, the DecryptKeyModal will
+   * prompt the user for their password.
    */
   const switchCommunity = (communityId) => {
     const membership = memberships.find(m => m.communityId === communityId)
     if (membership) {
       setActiveMembership(membership)
       localStorage.setItem('activeCommunityId', communityId)
-      // Clear secret key — new community needs its own decrypted key
-      sessionStorage.removeItem('secretKey')
     }
   }
 
@@ -91,21 +101,43 @@ export function AuthProvider({ children }) {
     if (membership) {
       setActiveMembership(membership)
       localStorage.setItem('activeCommunityId', communityId)
-      sessionStorage.removeItem('secretKey')
     }
   }
 
   /**
-   * Store the decrypted secret key for the active community.
+   * Store the decrypted secret key for a specific community.
+   * Keys are stored per-community so switching back doesn't re-prompt.
    * Only lives in sessionStorage — never sent to the server.
    */
-  const storeSecretKey = (secretKey) => {
-    sessionStorage.setItem('secretKey', secretKey)
+  const storeSecretKey = (secretKey, communityId) => {
+    const id = communityId || activeMembership?.communityId
+    if (id) {
+      sessionStorage.setItem(`secretKey_${id}`, secretKey)
+      setKeyVersion(v => v + 1)
+    }
   }
 
+  /**
+   * Get the decrypted secret key for the active community.
+   * Returns null if the key hasn't been decrypted yet for this community.
+   */
   const getSecretKey = () => {
-    return sessionStorage.getItem('secretKey')
+    const id = activeMembership?.communityId
+    if (!id) return null
+    return sessionStorage.getItem(`secretKey_${id}`)
   }
+
+  /**
+   * Whether the active community's secret key needs decryption.
+   * True when authenticated with an active membership that has
+   * encryptionData but no cached key. Memberships without
+   * encryptionData (shouldn't happen, but defensive) are skipped
+   * so the modal doesn't trap the user.
+   * Re-evaluated on every render; keyVersion state changes force re-renders
+   * after storeSecretKey() writes to sessionStorage.
+   */
+  const needsKeyDecryption = !!token && !!user && !!activeMembership
+    && !!activeMembership.encryptionData && !getSecretKey()
 
   const value = {
     user,
@@ -114,6 +146,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: !!token && !!user,
     memberships,
     activeMembership,
+    needsKeyDecryption,
     login,
     logout,
     switchCommunity,

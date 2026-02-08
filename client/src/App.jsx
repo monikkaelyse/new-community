@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext.jsx'
 import Navbar from './components/Navbar.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
+import DecryptKeyModal from './components/DecryptKeyModal.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
@@ -18,6 +19,7 @@ function App() {
   return (
     <div className="app">
       <Navbar />
+      <DecryptKeyModal />
       <main className="main-content">
         <Routes>
           {/* Public routes */}

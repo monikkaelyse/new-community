@@ -65,8 +65,11 @@ function RegisterPage() {
       })
 
       // 4. Store auth + decrypted secret key in session
+      const firstMembership = data.memberships[0]
       login(data.user, data.token, data.memberships)
-      storeSecretKey(secretKey)
+      if (firstMembership) {
+        storeSecretKey(secretKey, firstMembership.communityId)
+      }
 
       navigate('/dashboard')
     } catch (err) {

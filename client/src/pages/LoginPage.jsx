@@ -36,9 +36,9 @@ function LoginPage() {
           return
         }
 
-        // 3. Store auth + secret key
+        // 3. Store auth + secret key for the first community
         login(data.user, data.token, data.memberships)
-        storeSecretKey(secretKey)
+        storeSecretKey(secretKey, firstMembership.communityId)
       } else {
         login(data.user, data.token, data.memberships)
       }
