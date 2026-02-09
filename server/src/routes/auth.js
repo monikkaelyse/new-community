@@ -171,6 +171,12 @@ router.post('/join-community', authenticate, async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
+    const user = await User.findById(req.user.userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
     // Resolve community
     let community;
     if (isNewCommunity) {
@@ -197,7 +203,7 @@ router.post('/join-community', authenticate, async (req, res) => {
     }
 
     // Create membership with new keypair
-    const user = await User.findById(req.user.userId);
+
     const membership = new Membership({
       userId: req.user.userId,
       communityId: community._id,
