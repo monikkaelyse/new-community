@@ -21,6 +21,7 @@ function DecryptKeyModal() {
   // could write a key back to sessionStorage after logout cleared it.
   const mountedRef = useRef(true)
   useEffect(() => {
+    mountedRef.current = true
     return () => { mountedRef.current = false }
   }, [])
 
